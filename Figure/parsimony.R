@@ -51,22 +51,13 @@ plot_DNA_tree = function(maf){
   treeSPR <- acctran(treeSPR,phyDat)
   #rpar=root(treeSPR,outgroup="N",resolve.root=T)
   parsimony(c(trw,rtrw,rpar,par_tree_ratchet,treeSPR),phyDat)
-
-  #trw = NJ(dist.gene(binary_mat))
-  #plot(phytools::cophylo(trw,trw1,rotate = T))
-  
-  fitStart=pml(rtrw,phyDat)
-  fit = optim.pml(fitStart, model="GTR", 
-                  rearrangement="stochastic",
-                  optRooted =T)
   
   write.tree(rpar,file = sub("^.*/","",sub(".maf","par.tre",maf)))
-  write.tree(fit$tree,file = sub("^.*/","",sub(".maf","ML.tre",maf)))
+
 }
 
 for (maf in paste0("../tree/",c("DT03","DT04","DT06","DT07","DT09","DT10",
               "DT12","DT13","DT14","DT16","DT17","DT18","DT19"),".maf")){
-#for (maf in paste0("../tree/",c("DT19"),".maf")){
   plot_DNA_tree(maf)
 }
 
@@ -74,24 +65,16 @@ for (maf in paste0("../tree/",c("DT03","DT04","DT06","DT07","DT09","DT10",
 pdf(paste0("compare_trees.pdf"),width = 16,height = 8)
 for (patient in c("DT03","DT04","DT06","DT07","DT09","DT10",
                   "DT12","DT13","DT14","DT16","DT17","DT18","DT19")){
-ML_tree=read.tree(paste0(patient,"ML.tre"))  
+
 par_tree=read.tree(paste0(patient,"par.tre"))
 NJ_tree=read.tree(paste0("../tree/",patient,"newick.tre"))
 
 compare1=phytools::cophylo(NJ_tree,par_tree,rotate = T)
-compare2=phytools::cophylo(NJ_tree,ML_tree,rotate = T)
-compare3=phytools::cophylo(par_tree,ML_tree,rotate = T)
+
 
 plot(compare1)
 mtext("NJ tree",side = 2,line = -1)
 mtext("Parsimony tree",side = 4,line = -1)
-# plot(compare2)
-# mtext("NJ tree",side = 2,line = -1)
-# mtext("ML tree",side = 4,line = -1)
-# plot(compare3)
-# mtext("Parsimony tree",side = 2,line = -1)
-# mtext("ML tree",side = 4,line = -1)
-# dev.off()
 }
 dev.off()
 

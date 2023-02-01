@@ -93,9 +93,6 @@ for (patient in unique(sampleinfo$Patient)){
     non_block=T;class1=dna_cluster_all[[patient]][select_info$Sample];
     rna_class1=rna_cluster_all[[patient]][select_info$Sample]
   }
-  # if (length(rna_class>0)){
-  #   rna_class=rna_class}else{rna_class="1";
-  #   non_block=T;rna_class1=rna_cluster_all[[patient]][select_info$Sample]}
   select_info=cbind(select_info,class,rna_class)
   select_info$class=as.character(select_info$class)
   select_info$rna_class=as.character(select_info$rna_class)
@@ -275,7 +272,6 @@ ggsave("fig2d.pdf",width = 5,height = 2)
 
 sample_plot=readRDS("sample_plot_review.rds")
 
-library(ggplot2)
 for (i in 1:length(sample_plot)){
   ggsave(paste0(names(sample_plot)[i],".pdf"),
          plot = sample_plot[[i]][[1]],width = 2.5,height = 2)

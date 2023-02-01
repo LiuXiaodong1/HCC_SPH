@@ -1,20 +1,12 @@
-#data=matrix(data=1,nrow = 7,ncol = 13)
+library(ComplexHeatmap)
 data=matrix(data=1,nrow = 4,ncol = 13)
 colnames(data)=c(paste0("SH0",1:9),paste0("SH",10:13))
-
 data[1,]=c(-1,-1,0,0,1,1,0,0,0,1,1,-1,1)
-#data[2,]=c(0,0,0,0,1,1,0,0,0,1,0,1,0)
 data[2,]=c(1,0,0,1,1,0,1,0,1,0,0,1,1)
 data[3,]=c(1,1,0,1,1,1,1,1,1,1,1,1,1)
 data[4,]=c(0,1,-1,1,1,1,1,1,1,1,0,0,0)
-#data[6,]=c(-1,-1,-1,-1,1,1,-1,-1,-1,1,-1,1,-1)
-#data[7,]=c(-1,-1,-1,-1,1,1,-1,-1,-1,1,1,-1,1)
 data=as.data.frame(data)
-library(ComplexHeatmap)
 data=sapply(data, function(x) as.character(x))
-# rownames(data)=c("Tectonic","Mixed subtype","Imbalance DNA tree",
-#                  "Imbalance RNA tree",
-#                  "Mobster test","Subtype OU","Tectonic OU")
 rownames(data)=c("Spatially variegated block","Imbalance DNA tree",
                  "Imbalance RNA tree",
                  "MOBSTER test")

@@ -2,7 +2,7 @@ pacman::p_load(data.table,tidyverse,fgsea)
 setDTthreads(10)
 
 ## this script returns multiple gene signatures including Sia et al, inflammaotry, IFNG, exhausted t-cell by calculating GSVA scores using gene lists
-expression <-read.table("E:/cancer genome/liver/·ÖÎö/RNA_cluster/combine_tcga_DT/deseq_log2_tcga_DT_tumor.tsv")
+expression <-read.table("E:/cancer genome/liver/????/RNA_cluster/combine_tcga_DT/deseq_log2_tcga_DT_tumor.tsv")
 
 Sia_immune_class <- fread("geneSets/Sia_et_al_immune_class_signature.txt") %>% 
   as.list()
@@ -63,18 +63,8 @@ ht=Heatmap(gsva_res,column_split = 3,row_split = 2)
 
 library(tidyverse)
 library(ggsci)
-info=read.table("../../../distance/all.csv",header = T,sep = ",")
-rownames(gsva_res)
-
 library(ggpubr)
-# pdf("score_position2.pdf",width = 25,height = 15)
-# for (f in fill){
-#   tmp=ggarrange(plotlist = plot[[f]],widths = 5,heights = 3)
-#   print(tmp)
-# }
-# dev.off()
-
-
+info=read.table("../../../distance/all.csv",header = T,sep = ",")
 subtype=read.table("../../3/class_name_tcga_DT_tumor.tsv")
 subtype_vec=subtype$V2
 subtype_vec=subtype_vec%>%gsub("1","Wnt",.)%>%gsub("2","Classic",.)%>%
@@ -403,8 +393,6 @@ subtype_anno = rowAnnotation("Subtype" = anno_barplot(m,gp = gpar(fill = c(RColo
                              annotation_name_gp= gpar(fontsize =6),annotation_name_rot = 45)
 
 
-#DNA_tectonic_number=c(NA,NA,1,1,2,2,1,1,1,2,3,NA,3)
-#RNA_tectonic_number=c(NA,NA,1,1,2,2,1,1,1,3,3,NA,2)
 IBD_DNA_R2=c(0,	0.06,	0.19,	0.12,	0.25,	0.435,	0.2,	
              0.169,	0,	0.24,	0.268,	0.539,	0.339)
 IBD_RNA_R2=c(0.16,	0.11,	0.14,	0.14,	0.2,	0.364,	0.384,
@@ -443,7 +431,6 @@ plot_var=grid::grid.grabExpr(draw(var,padding = unit(c(2, 7, 2, 2), "mm"),
                                   heatmap_legend_list = list(lgd),
                                   column_title="Variance of biomarkers",
                                   column_title_gp = gpar(fontsize=8)))
-#rna_tectonic=readRDS("../../2/rna_cluster.RDS")
 
 gsva_res_select=gsva_res[pathway_s,]
 rownames(gsva_res_select)=names(fill)[match(rownames(gsva_res_select),fill)]
@@ -453,8 +440,6 @@ heatmap_sel= ComplexHeatmap::Heatmap(t(scale(t(gsva_res_select))),cluster_rows =
                                      name = "z-score",column_split = split,show_row_dend = F,
                                      column_gap = unit(0, "mm"), border = TRUE,show_column_names = F,
                                      show_column_dend = F,
-                                     #right_annotation = right_annotation,
-                                     #left_annotation = subtype_anno,
                                      heatmap_legend_param = list(title_gp = gpar(fontsize =5),
                                                                  labels_gp = gpar(fontsize =5),
                                                                  grid_width = unit(1, "mm"),

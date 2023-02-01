@@ -1,5 +1,10 @@
 library(tidyverse)
-
+library(ggrepel)
+library(ggpubr)
+library(WeightedCluster)
+library(ape)
+library(ggfortify)
+library(ggforce)
 setwd("E:/cancer genome/liver/analysis/Fig/2/review/")
 nodeHeight = function(edge, Nedge, yy) .C(node_height, 
                                           as.integer(edge[, 1]), 
@@ -54,9 +59,6 @@ plot_physical_fst=function(patient,patient_paper){
       labs(subtitle =  changeP(p_val,r2))+
       theme(plot.title = element_blank(),legend.title = element_blank())+
       geom_smooth(method='lm',se=T,colour="red",linetype="dashed",size=1,fill="pink")+
-      # annotate("text",parse = T,x=t$x,y=t$y,size=5,color="red",
-      #          label=as.expression(bquote(atop(p~"="~.(t$p_val),
-      #                                          R^2~"="~.(t$r2)))))+
       theme(text=element_text(size = 6),
             legend.spacing = unit(0,"cm"),
             plot.title=element_text(hjust = 0.5,size = 7),
@@ -75,9 +77,6 @@ plot_physical_fst=function(patient,patient_paper){
       labs(subtitle =  changeP(p_val,r2))+
       theme(plot.title = element_blank(),legend.position = "none")+
       geom_smooth(method='lm',se=T,colour="red",linetype="dashed",size=1,fill="pink")+
-      # annotate("text",parse = T,x=t$x,y=t$y,size=5,color="red",
-      #          label=as.expression(bquote(atop(p~"="~.(t$p_val),
-      #                                          R^2~"="~.(t$r2)))))+
       theme(text=element_text(size = 6),
             legend.spacing = unit(0,"cm"),
             plot.title=element_text(hjust = 0.5,size = 7),
@@ -128,9 +127,6 @@ plot_physical_rna=function(patient,patient_paper){
       labs(subtitle =  changeP(p_val,r2))+
       theme(plot.title = element_text(hjust = 0.5),legend.title = element_blank())+
       geom_smooth(method='lm',se=T,colour="red",linetype="dashed",size=1,fill="pink")+
-      # annotate("text",parse = T,x=t$x,y=t$y,size=5,color="red",
-      #          label=as.expression(bquote(atop(p~"="~.(t$p_val),
-      #                                          R^2~"="~.(t$r2)))))+
       theme(text=element_text(size = 6),
             legend.spacing = unit(0,"cm"),
             plot.title=element_text(hjust = 0.5,size=7),
@@ -148,9 +144,6 @@ plot_physical_rna=function(patient,patient_paper){
       labs(subtitle =  changeP(p_val,r2))+
       theme(legend.position = "none",plot.title = element_text(hjust = 0.5))+
       geom_smooth(method='lm',se=T,colour="red",linetype="dashed",size=1,fill="pink")+
-      # annotate("text",parse = T,x=t$x,y=t$y,size=5,color="red",
-      #          label=as.expression(bquote(atop(p~"="~.(t$p_val),
-      #                                          R^2~"="~.(t$r2)))))+
       theme(text=element_text(size = 6),
             legend.spacing = unit(0,"cm"),
             plot.title=element_text(hjust = 0.5,size=7),
@@ -170,12 +163,7 @@ for (patient in substr(list.files(path = "E:/cancer genome/liver/analysis//Fig/1
   patient_paper=all[all$Patient==patient,]$Patient_paper[1]
   p2_rna[[patient]]=plot_physical_rna(patient,patient_paper)
 }
-library(tidyverse)
-library(ggpubr)
-library(WeightedCluster)
-library(ape)
-library(ggfortify)
-library(ggforce)
+
 all_data=read.csv("../all.csv",header = T)
 all_data=all_data[which(!all_data$Patient %in% c("DT03","DT04","DT18")),]
 comb=function(x,y){
@@ -252,8 +240,6 @@ plot_tree=function(rtrw,cluster,title=""){
   
   col_tips = dat1_tips$color
   names(col_tips) = dat1_tips$child_name
-  # color1=RColorBrewer::brewer.pal(6,"Set1")
-  # names(color1)=c(1,2,4,3,5,6)
   color1=RColorBrewer::brewer.pal(12,"Paired")[c(2,4,9)]
   color1=c(color1,"#E31A1C")
   names(color1)=c(1,4,3,2)
@@ -265,8 +251,6 @@ plot_tree=function(rtrw,cluster,title=""){
                size=5,shape=21,stroke=0.4) +
     scale_fill_manual(values=color1) +
     xlab("")+ggtitle(title)+
-    # geom_text(data = dat1_tips,color="white",
-    #           aes(label=child_name,x = child_x,y = child_y),hjust=0.5, vjust=0.5, size=2) +
     theme_void() + 
     theme(legend.position = "none",plot.margin=unit(c(0,0,0,0),'lines'),
           axis.title.x = element_text(size =6,hjust =0.7),
@@ -310,7 +294,7 @@ for (patient in c(unique(all_data$Patient))[c(3,4,8,9,10)]){
   cluster=cluster[colnames(binary_mat)]
   data=as.data.frame(cluster)
   data$cluster=as.character(data$cluster)
-  library(ggrepel)
+  
   pca_dna[[patient]]=autoplot(pca,data = data,colour="cluster")+
     scale_color_manual(values =  color[as.character(unique(cluster))])+
     ggtitle(paste0(patient_paper," genetic PCA"))+theme_classic()+
