@@ -10,23 +10,22 @@ library(org.Hs.eg.db)
 library(msigdbr)
 library(ggpubr)
 library(ggsci)
+library(scales)
 library(dendextend)
 library(colorRamps)
 set.seed(12345)
 
-
+setwd("E:/cancer genome/liver/submission/NC_final/figure/")
 changeP <- function(p_val,r2) {
   tmp=strsplit(as.character(p_val),"e")[[1]]
   if(length(tmp)>1){
     a=tmp[1];b=tmp[2]
-    as.expression(bquote(atop(p~"="~.(a)~"??"~10^~.(b)~","~R^2~"="~.(r2))))
+    as.expression(bquote(atop(p~"="~.(a)~"×"~10^~.(b)~","~R^2~"="~.(r2))))
   }else{
     as.expression(bquote(atop(p~"="~.(p_val)~","~R^2~"="~.(r2))))
   }
 }
 marker=read.table("E:/cancer genome/liver/analysis//decoder/lihc/HCC_primary/Final_marker_genes.txt",sep = "\t",header = T)
-# colnames(marker)=gsub("_.*","",colnames(marker))%>%sub("X5.5","X5.5(Wnt)",.)%>%sub("X5.1","X5.1(metabolism)",.)%>%
-#   sub("X5.3","X5.3(ECM)",.)%>%sub("X7.5","X7.5(Cell Cycle)",.)
 colnames(marker)=gsub("_.*","",colnames(marker))%>%sub("X5.5","Wnt",.)%>%
   sub("X5.1","metabolism",.)%>%
   sub("X5.3","ECM",.)%>%
@@ -36,21 +35,24 @@ survival=read_tsv("E:/cancer genome/liver/analysis//RNA_cluster/NMF/lihc_tcga_cl
 survival$`Disease Free Status`=as.numeric(substr(survival$`Disease Free Status`,1,1))
 survival$`Overall Survival Status`=as.numeric(substr(survival$`Overall Survival Status`,1,1))
 gene_count=read_tsv("E:/cancer genome/liver/analysis//decoder/lihc/HCC_primary/deseq_log2_primary.tsv")
-#colnames(gene_count)=gsub("\\.","-",colnames(gene_count))
 
-
-other_studies=read.table("../../4/literatre_pathway_tumor.tsv")
+other_studies=read.table("E:/cancer genome/liver/analysis/Fig/4/literatre_pathway_tumor.tsv")
 other_studies=other_studies[colnames(gene_count)[-1],]
 
-maffile=list.files(path = "..",pattern = "*.maf$",all.files = T,
-                   recursive = T,full.names = T)
+maffile=list.files(pattern = "*.maf$",all.files = T,
+                   recursive = T,full.names = T,
+                   path = "E:/cancer genome/liver/analysis/Fig/3/")
+
 maf1=read_tsv(maffile[1],comment = "#")
 maf2=read_tsv(maffile[2],comment = "#")
 maf3=read_tsv(maffile[3],comment = "#")
 maf4=read_tsv(maffile[4],comment = '#')
-maf=dplyr::bind_rows(maf1[,c(1,16)],maf2[,c(1,16)],maf3[,c(1,16)],maf4[,c(1,16)])
+unique(maf1$Variant_Classification)
+maf=dplyr::bind_rows(maf1[,c(1,9,16)],maf2[,c(1,9,16)],maf3[,c(1,9,16)],maf4[,c(1,9,16)])
 maf=unique(maf)
-maf=maf%>%filter(Hugo_Symbol=="CTNNB1")
+
+maf=maf%>%filter(Hugo_Symbol=="CTNNB1")%>%
+  filter(!Variant_Classification%in%c("Silent","Intron"))
 mut_sample=gsub(pattern = "-",replacement = ".",
                 substr(maf$Tumor_Sample_Barcode,1,16))
 CTNNB1_mut = colnames(gene_count)[-1]%in%mut_sample
@@ -80,6 +82,7 @@ ha_fun_s=function(other_studies){
                            ))
   return(anno)
 }
+
 purity=read.table("E:/cancer genome/liver/analysis/RNA_cluster/gene_symbol/TCGA_data.tsv",header = T)
 purity=purity%>%dplyr::select(tumor_sample_barcode,purity)%>%unique()
 purity$tumor_sample_barcode=gsub("-",".", purity$tumor_sample_barcode)
@@ -130,7 +133,6 @@ plot_fun=function(marker,data,dis="euclidean",ncluster=2,n_col=2){
   gene=gene[!duplicated(gene$gene),]
   rownames(gene)=gene$gene
   gene=gene[rownames(select_data),]
-  #marker_col=c(rainbow(ncol(marker)))
   marker_col=ggsci::pal_d3("category20")(ncol(marker))
   names(marker_col)=colnames(marker)
   gene_anno = rowAnnotation(factor = gene$class,
@@ -199,8 +201,6 @@ plot_fun=function(marker,data,dis="euclidean",ncluster=2,n_col=2){
   
   p1=draw(p)
   
-  
-  #survival=read_tsv("E:/cancer genome/liver/????/RNA_cluster/NMF/lihc_tcga_clinical_data.tsv")
   for (n in 1:ncluster){
     assign(paste0("class",n),colnames(gene_weight_scale)[column_order(p1)[[n]]])
     assign(paste0("stage_class",n),
@@ -319,14 +319,6 @@ plot_fun=function(marker,data,dis="euclidean",ncluster=2,n_col=2){
   result1=result[1:10,]
   result1$Description=sub(" process","",result1$Description)
   result1$Description=factor(result1$Description,levels =rev(result1$Description))
-  library(scales)
-  reverselog_trans <- function(base = exp(1)) {
-    trans <- function(x) -log(x, base)
-    inv <- function(x) base^(-x)
-    trans_new(paste0("reverselog-", format(base)), trans, inv, 
-              log_breaks(base = base), 
-              domain = c(1e-100, Inf))
-  }
   
   
   fmt_dcimals <- function(decimals=0){
@@ -335,7 +327,7 @@ plot_fun=function(marker,data,dis="euclidean",ncluster=2,n_col=2){
   if (length(which(marker_go_1@result$p.adjust<0.01))>=1){
     p_go=ggplot(result1)+geom_bar(aes(x=Description,y=p.adjust),
                                   stat = "identity",fill="#FC8D62")+
-      scale_y_continuous(trans = reverselog_trans(base=10),expand = c(0,0))+
+      scale_y_continuous(trans = c("log10", "reverse"))+
       coord_flip()+
       scale_x_discrete()+
       xlab(paste0(label," factor genes' GO term"))+ylab("Adjusted pvalue")+theme_classic()+
@@ -359,7 +351,7 @@ plot_fun=function(marker,data,dis="euclidean",ncluster=2,n_col=2){
   if (length(which(kk@result$p.adjust<0.01))>=1){
     p_kegg=ggplot(result1)+geom_bar(aes(x=Description,y=p.adjust),
                                     stat = "identity",fill="#FC8D62")+
-      scale_y_continuous(trans = reverselog_trans(base=10),expand = c(0,0))+
+      scale_y_continuous(trans = c("log10", "reverse"),expand = c(0,0))+
       coord_flip()+
       scale_x_discrete()+
       xlab(paste0(label," factor genes' KEGG term"))+ylab("Adjusted pvalue")+theme_classic()+
@@ -387,16 +379,13 @@ plot_fun=function(marker,data,dis="euclidean",ncluster=2,n_col=2){
 
 p2=plot_fun(marker= marker[c(2)],n_col=2, data = gene_count,ncluster=2)
 
-
-marker=read.table("../../4/Final_marker_genes.txt",sep = "\t",header = T)
+marker=read.table("E:/cancer genome/liver/analysis/Fig/4/Final_marker_genes.txt",sep = "\t",header = T)
 colnames(marker)=sub("_.*","",colnames(marker))
 data=read.table("E:/cancer genome/liver/analysis/decoder/lihc/HCC_primary/deseq_log2_primary.tsv",header = T,row.names = 1)
 
 marker_top=marker[1:100,c(1,2,3,4)]
 
-
-
-other_studies=read.table("../../4/literatre_pathway.tsv")
+other_studies=read.table("E:/cancer genome/liver/analysis/Fig/4/literatre_pathway.tsv")
 other_studies=other_studies[colnames(data),]
 ha=HeatmapAnnotation(Lee_2004=other_studies$Lee.2004,
                      Boyault_2007=other_studies$Boyault.2007,
@@ -410,15 +399,18 @@ ha=HeatmapAnnotation(Lee_2004=other_studies$Lee.2004,
                                                     grid_height=unit(2,"mm"),
                                                     legend_height = unit(1, "cm")),
                      simple_anno_size  = unit(2,"mm"),
-                     col = list(Lee_2004=c("SURVIVAL_DN"="hotpink4","SURVIVAL_UP"="khaki3"),
-                                Hoshida_2009=c("S1"=brewer.pal(8,"Set1")[3],"S2"=brewer.pal(8,"Set1")[4],"S3"=brewer.pal(8,"Set1")[5]),
-                                Chiang_2008=c("CTNNB1"=brewer.pal(5,"Accent")[1],"INTERFERON"=brewer.pal(5,"Accent")[2],
-                                              "POLYSOMY7"=brewer.pal(5,"Accent")[3],"PROLIFERATION"=brewer.pal(5,"Accent")[4],
+                     col = list(Lee_2004=c("SURVIVAL_DN"="hotpink4",
+                                           "SURVIVAL_UP"="khaki3"),
+                                Hoshida_2009=c("S1"=brewer.pal(8,"Set1")[3],
+                                               "S2"=brewer.pal(8,"Set1")[4],
+                                               "S3"=brewer.pal(8,"Set1")[5]),
+                                Chiang_2008=c("CTNNB1"=brewer.pal(5,"Accent")[1],
+                                              "INTERFERON"=brewer.pal(5,"Accent")[2],
+                                              "POLYSOMY7"=brewer.pal(5,"Accent")[3],
+                                              "PROLIFERATION"=brewer.pal(5,"Accent")[4],
                                               "UNANNOTATED"=brewer.pal(5,"Accent")[5]),
                                 "CTNNB1 mutation"=c("TRUE"="brown1","FALSE"="darkgreen"),
                                 Boyault_2007=c("G12"="pink","G3"="bisque","G56"="dodgerblue")))
-
-
 
 col_fun = colorRamp2(c(-2,0,2),c("blue","white","red"))
 
@@ -427,7 +419,6 @@ factor=c()
 for (i in 1:ncol(marker_top)){
   factor=c(factor,rep(i,length(marker_top[,i])))
 }
-
 
 factor=unlist(factor)
 marker_col=rainbow(length(unique(factor)))
@@ -454,14 +445,14 @@ select_data=t(scale(t(select_data)))
 #                                    innerLinkage="ward.D2",
 #                                    distance="spearman",title = "geneConsensus")
 # saveRDS(result_Sp_wd1,file = "result_Sp_wd1.RDS")
-result_Sp_wd1=readRDS("../result_Sp_wd1.RDS")
+result_Sp_wd1=readRDS("E:/cancer genome/liver/analysis/Fig/3/result_Sp_wd1.RDS")
 
 # result_Sp_wd=ConsensusClusterPlus(select_data,maxK=8,reps=500,pItem=0.8,
 #                                   pFeature=0.8,plot = "pdf",seed = 123,
 #                                   innerLinkage="ward.D2",
 #                                   distance="spearman",title = "consensusplot")
 # saveRDS(result_Sp_wd,file = "result_Sp_wd.RDS")
-result_Sp_wd=readRDS("../result_Sp_wd.RDS")
+result_Sp_wd=readRDS("E:/cancer genome/liver/analysis/Fig/3/result_Sp_wd.RDS")
 
 select_data1=select_data
 colnames(select_data1)=sub("^TCGA.*$","",colnames(select_data))
@@ -500,16 +491,12 @@ p_heatmap=Heatmap(select_data1,cluster_columns =  T,
 p_heatmap=draw(p_heatmap,column_title="", padding = unit(c(2, 2, 2, 2), "mm"), 
                annotation_legend_side = "bottom")
 
-# pdf("test.pdf",paper = "a4",height = 4)
-# p_heatmap
-# dev.off()
 V1=unlist(lapply(column_order(p_heatmap),function(x){colnames(select_data)[x]}))
 V2=c()
 for (i in 1:4){V2=c(V2,rep(i,length(column_order(p_heatmap)[[i]])))}
 class=cbind.data.frame(V2,V1)
 
 class_tcga=class[which(substr(class$V1,1,4)=="TCGA"),]
-#write.table(class_tcga,file = "class_tcga.tsv")
 class_tcga$V1=gsub("\\.","-",class_tcga$V1)
 rownames(class_tcga)=class_tcga$V1
 
@@ -518,21 +505,17 @@ survival$`Disease Free Status`=as.numeric(substr(survival$`Disease Free Status`,
 survival$`Overall Survival Status`=as.numeric(substr(survival$`Overall Survival Status`,1,1))
 purity=read.table("E:/cancer genome/liver/analysis/RNA_cluster/gene_symbol/TCGA_data.tsv",header = T)
 purity=purity%>%dplyr::select(tumor_sample_barcode,purity)%>%unique()
-#purity$tumor_sample_barcode=gsub("-",".", purity$tumor_sample_barcode)
 rownames(purity)=purity$tumor_sample_barcode
 sample_select=intersect(rownames(purity),class_tcga$V1)
 
 survival$`Sample ID`=paste0(survival$`Sample ID`,"A")
 survival_select=survival[survival$`Sample ID`%in%class_tcga$V1,]
 survival_select$Cluster=class_tcga[survival_select$`Sample ID`,1]
-library(survival)
-library(survminer)
 fit <- survfit(Surv(time=survival_select$`Overall Survival (Months)`/12,
                     event=survival_select$`Overall Survival Status`) ~Cluster,
                data = survival_select)
 
 p_os=ggsurvplot(fit, data = survival_select,pval = T,pval.method = T,
-                #log.rank.weights="n",
                 palette = c(RColorBrewer::brewer.pal(7,"Set2")[c(5,1,2,4)]),
                 title=element_blank(),pval.size=1.5,
                 legend.title="Subtype",legend.labs=c("Wnt","Classic","Hybrid","Proliferation"),
@@ -546,9 +529,8 @@ survival_select$`Disease Free Status`=as.numeric(substr(survival_select$`Disease
 fit <- survfit(Surv(survival_select$`Disease Free (Months)`/12,
                     survival_select$`Disease Free Status`) ~ Cluster,  
                data = survival_select)
-p_dfs=ggsurvplot(fit, data = survival_select,pval = T,
-                 title="",pval.method = T,log.rank.weights="n",
-                 ggtheme = theme_survminer() + 
+p_dfs=ggsurvplot(fit, data = survival_select,pval = T,title="",pval.method = T,
+                 log.rank.weights="n",ggtheme = theme_survminer() + 
                    theme(plot.title = element_text(hjust = 0.5, face = "bold"),
                          plot.margin = unit(c(2,20,2,2),"mm")))+
   ylab("Disease free suvival probability")+xlab("Time(year)")
@@ -560,11 +542,9 @@ sample_class$stage=gsub("[A,B,C]$","",sample_class$stage)
 sample_class=sample_class[which(!is.na(sample_class$stage)),]
 
 sample_class$stage=factor(
-  sample_class$stage,levels=c("Stage I",
-                              "Stage II",
-                              "Stage III",
-                              "Stage IV")
-)
+  sample_class$stage,
+  levels=c("Stage I","Stage II","Stage III","Stage IV")
+  )
 
 s=chisq.test(sample_class$stage,sample_class$class)
 
@@ -597,14 +577,8 @@ f_p= format(f_p$p.value,digit=2,scientific = T)
 f_p_d=rbind(f_p_d,c(f_p,"1","4",1.25))
 f_p_d$y.position=as.numeric(f_p_d$y.position)
 
-color=c("#FDDF71",
-        "#F28F2F",
-        "#DE0918",
-        "#8B0000")
-names(color)=c("Stage I",
-               "Stage II",
-               "Stage III",
-               "Stage IV")
+color=c("#FDDF71","#F28F2F","#DE0918","#8B0000")
+names(color)=c("Stage I","Stage II","Stage III","Stage IV")
 f_p_d$y.position=as.numeric(f_p_d$y.position)
 sample_number=cbind.data.frame(y=0,table(sample_class$class))
 sample_class$class=as.character(sample_class$class)
@@ -623,7 +597,6 @@ p_stage=ggplot(data=sample_class)+
             aes(x=2.5,y=1.1,
                 label=paste0("p=",format(s$p.value,digit=2,scientific = T))),
             size=1.5,color="#4D4D80")+
-  #stat_pvalue_manual(f_p_d,step.increase = 0.04,size = 1.5,bracket.size = 0.15)+
   theme(text=element_text(size = 5),
         legend.spacing = unit(0,"cm"),
         plot.title=element_text(hjust = 0.5),
@@ -645,33 +618,7 @@ f=ggarrange(f1,f2,
             nrow = 3,heights = c(1.5,1.2,2.5),labels = c("","","e"),
             font.label = list(size=8))
 
-
-purity=read.table("E:/cancer genome/liver/analysis/RNA_cluster/gene_symbol/TCGA_data.tsv",header = T)
-samples=intersect(class_tcga$V1,purity$tumor_sample_barcode)
-purity=purity[purity$tumor_sample_barcode%in%samples,]
-purity$class=class_tcga[purity$tumor_sample_barcode,1]
-data=purity
-data$class=as.character(data$class)
-
-mycompare=list(c(1,2),c(2,3),c(3,4),c(1,4))
-p_purity=ggplot(data = data,aes(class,purity))+
-  geom_violin(aes(fill=class),trim=FALSE,size=0.15)+
-  scale_x_discrete(labels=c("Wnt","Classic","Hybrid","Proliferation"))+
-  scale_fill_manual(values=c(RColorBrewer::brewer.pal(7,"Set2")[c(5,1,2,4)]))+
-  geom_boxplot(width=0.2,outlier.size = 0.5,size=0.15)+
-  stat_compare_means(comparisons = mycompare,size=1.5,bracket.size = 0.15)+
-  theme_classic()+xlab("Subtype")+ylab("Purity")+
-  theme(legend.position = "none",text = element_text(size=5),
-        plot.title = element_text(hjust = 0.5),
-        axis.title = element_text(size = 5),
-        strip.text = element_text(size=5),
-        strip.background = element_rect(size=0.1),
-        line = element_line(size = 0.1),
-        legend.box.spacing = unit(0.01,"cm"),
-        axis.ticks.length = unit(0.03,"cm"),
-        axis.text.x = element_text(angle = 45,vjust = 0.5))
-
-immune_score=read.table("../liver_hepatocellular_carcinoma_RNAseqV2.txt",header = T)
+immune_score=read.table("E:/cancer genome/liver/analysis/Fig/3/liver_hepatocellular_carcinoma_RNAseqV2.txt",header = T)
 immune_score$ID=paste0(immune_score$ID,"A")
 immune_samples=intersect(class_tcga$V1,immune_score$ID)
 immune=immune_score[match(immune_samples,immune_score$ID),"Immune_score"]
@@ -685,9 +632,15 @@ mycompare=list(c(1,2),c(2,3),c(1,3),c(1,4))
 p_immune=ggplot(data = data,aes(class,immune))+
   geom_violin(aes(fill=class),trim=FALSE,size=0.15)+
   scale_x_discrete(labels=c("Wnt","Classic","Hybrid","Proliferation"))+
+  geom_text(data=sample_number, 
+            aes(x=Var1,y=y,label=paste0("n=",Freq)),vjust=10,size=1.5)+
   scale_fill_manual(values=c(RColorBrewer::brewer.pal(7,"Set2")[c(5,1,2,4)]))+
   geom_boxplot(width=0.2,outlier.size = 0.5,size=0.15)+
-  stat_compare_means(comparisons = mycompare,size=1.5,bracket.size = 0.15,method = "t.test")+
+  stat_compare_means(comparisons = mycompare,
+                     size=1.5,
+                     method.args = list(alternative = "two.side"),
+                     bracket.size = 0.15,
+                     method = "wilcox.test")+
   theme_classic()+xlab("Subtype")+ylab("Immune score")+
   theme(legend.position = "none",text = element_text(size=5),
         plot.title = element_text(hjust = 0.5),
@@ -698,8 +651,6 @@ p_immune=ggplot(data = data,aes(class,immune))+
         legend.box.spacing = unit(0.01,"cm"),
         axis.ticks.length = unit(0.03,"cm"),
         axis.text.x = element_text(angle = 45,vjust = 1,hjust=1))
-ggsave("immune_score.pdf",width = 39.511,height = 46.704,units = "mm")
-
 
 file.dir="E:/cancer genome/liver/TCGA/CNV/"
 files=list.files(path = "E:/cancer genome/liver/TCGA/CNV/",
@@ -751,7 +702,6 @@ select=select%>%filter(Sample.Type=="Primary Tumor")
 
 files=paste(select$File.ID,select$File.Name,sep = "/")
 
-
 all_seg=data.frame()
 for (i in 1:length(files)){
   seg=read.table(paste0(file.dir,files[i]),sep = "\t",header = T)
@@ -779,13 +729,6 @@ all_segs <- set_absolute_pos(all_segs, cytoband_length)
 rownames(class_tcga)=class_tcga$V1
 all_segs$class=class_tcga[all_segs$Tumor_Sample_Barcode,2]
 
-
-
-
-# all_segs1=read.table("tcga_seg_class1.tsv",header = T)
-# all_segs2=read.table("tcga_seg_class2.tsv",header = T)
-# all_segs3=read.table("tcga_seg_class3.tsv",header = T)
-# all_segs4=read.table("tcga_seg_class4.tsv",header = T)
 cyto=read_tsv("E:/cancer genome/liver/TCGA/CNV/cytoBand.txt",col_names = F)
 cyto=cyto%>%filter(X1%in%c(paste0("chr",c(1:22,"X"))))
 genome_len=sum(cyto$X3-cyto$X2)
@@ -799,7 +742,6 @@ for (s in samples){
   cnv1=c(cnv1,mean(abs(tmp$Segment_Mean)))
   GII1=c(GII1,len/genome_len)
 }
-mean(GII1)
 
 segs=all_segs2
 samples=unique(segs$Tumor_Sample_Barcode)
@@ -811,7 +753,6 @@ for (s in samples){
   cnv2=c(cnv2,mean(abs(tmp$Segment_Mean)))
   GII2=c(GII2,len/genome_len)
 }
-mean(GII2)
 
 segs=all_segs3
 samples=unique(segs$Tumor_Sample_Barcode)
@@ -828,7 +769,6 @@ for (s in samples){
   }
   
 }
-mean(GII3)
 
 segs=all_segs4
 samples=unique(segs$Tumor_Sample_Barcode)
@@ -844,21 +784,28 @@ for (s in samples){
   }
   cnv4=c(cnv4,mean(abs(tmp$Segment_Mean)))
 }
-mean(GII4)
+
 GII1=cbind.data.frame(GII=GII1,class="GII1")
 GII2=cbind.data.frame(GII=GII2,class="GII2")
 GII3=cbind.data.frame(GII=GII3,class="GII3")
 GII4=cbind.data.frame(GII=GII4,class="GII4")
 GII=rbind(GII1,GII2,GII3,GII4)
-library(ggpubr)
 
 my_comparisons=list(c(1,2),c(2,3),c(2,4))
+
 p_GII=ggplot(data = GII,aes(class,GII))+
   geom_violin(aes(fill=class),trim=FALSE,size=0.15)+
+  geom_text(data=sample_number, 
+            aes(x=paste0("GII",Var1),y=y,
+                label=paste0("n=",Freq)),vjust=5,size=1.5)+
   geom_boxplot(width=0.2,outlier.size = 0.5,size=0.15)+xlab("Subtype")+
   scale_x_discrete(labels=c("Wnt","Classic","Hybrid","Proliferation"))+
   scale_fill_manual(values=c(RColorBrewer::brewer.pal(7,"Set2")[c(5,1,2,4)]))+
-  theme_classic()+stat_compare_means(comparisons = my_comparisons,size=1.5,bracket.size = 0.15)+
+  theme_classic()+
+  stat_compare_means(comparisons = my_comparisons,
+                     method = "wilcox.test",
+                     method.args = list(alternative = "two.side"),
+                     size=1.5,bracket.size = 0.15)+
   theme(legend.position = "none",text = element_text(size=5),
         plot.title = element_text(hjust = 0.5),
         axis.title = element_text(size = 5),
@@ -876,6 +823,8 @@ breakpoint4=cbind.data.frame(breakpoint=breakpoint4,class="breakpoint4")
 breakpoint=rbind(breakpoint1,breakpoint2,breakpoint3,breakpoint4)
 p_breakpoint=ggplot(data = breakpoint,aes(class,breakpoint))+
   geom_violin(aes(fill=class),trim=FALSE,size=0.15)+
+  geom_text(data=sample_number, 
+            aes(x=Var1,y=y,label=paste0("n=",Freq)),vjust=2,size=1.5)+
   geom_boxplot(width=0.2,outlier.size = 0.5,size=0.15)+
   scale_x_discrete(labels=c(1,2,3,4))+
   scale_fill_manual(values=c(RColorBrewer::brewer.pal(7,"Set2")[c(5,1,2,4)]))+
@@ -888,9 +837,6 @@ p_breakpoint=ggplot(data = breakpoint,aes(class,breakpoint))+
         legend.box.spacing = unit(0.01,"cm"),
         axis.ticks.length = unit(0.03,"cm"))
 
-ggarrange(p_purity,p_GII,p_breakpoint,ncol = 3,nrow = 1)
-
-
 immune=read.csv("E://cancer genome/liver/analysis/cibersort/CIBERSORTx_Job4_Results.csv",header = T)
 immune=immune[,-c(24:26)]
 immune_matrix=t(as.matrix(immune[,-1]))
@@ -898,9 +844,7 @@ colnames(immune_matrix)=immune$Mixture
 
 data=tidyr::gather(immune,key = celltype,value = value,-Mixture)
 
-
 class_tcga$V1=gsub("-",".",class_tcga$V1)
-#data$Mixture=factor(data$Mixture,levels = class$V1)
 
 class1=class_tcga$V1[which(class_tcga$V2==1)]
 class2=class_tcga$V1[which(class_tcga$V2==2)]
@@ -918,13 +862,10 @@ for( r in 1:22 ){
   p=c(p,t.test(immune_matrix2[r,],immune_matrix4[r,])$p.value)
 }
 
-
 diff=rownames(immune_matrix)[which(p.adjust(p)<0.05)]
 
 select_data=data[(data$celltype%in%diff)&(data$Mixture%in%c(class2,class4)),]
 select_data$class=as.character(ifelse(select_data$Mixture %in% class2,2,4))
-
-library(ggpubr)
 
 select_data=data[data$celltype %in% diff,]
 class_name=class_tcga$V2
@@ -936,13 +877,21 @@ select_data$celltype[which(select_data$celltype=="T.cells.regulatory..Tregs.")]=
 select_data$celltype = sub("^.*\\.","",select_data$celltype)
 select_data$celltype[which(select_data$celltype=="resting")]="CD4+ resting T"
 select_data$celltype=factor(select_data$celltype,levels=c("CD4+ resting T","Monocytes","M1","M0","Treg"))
+sample_number=cbind.data.frame(y=0,table(sample_class$class))%>%filter(Var1%in%c(2,4))
+
 immune_plot=ggplot(data = select_data,aes(class,value))+
   scale_x_discrete(labels=c("Classic","Proliferation"))+
+  #scale_y_continuous(limits = c(-0.15,1))+
   geom_violin(aes(fill=class),trim = FALSE,size=0.15)+
-  facet_wrap(~ celltype,scales = "free",ncol = 5)+xlab("Subtype")+ylab("Proportion")+
+  geom_text(data=sample_number,
+            aes(x=Var1,y=y,label=paste0("n=",Freq)),
+            vjust=4.5,size=1.5)+
+  facet_wrap(~ celltype,scales = "free",ncol = 5)+
+  xlab("Subtype")+ylab("Proportion")+
   geom_boxplot(width=0.2,outlier.size = 0.5,size=0.15)+theme_classic()+
   scale_fill_manual(values=c(RColorBrewer::brewer.pal(7,"Set2")[c(1,4)]))+
   stat_compare_means(comparisons = list(c("2","4")),
+                     method = "wilcox.test",
                      size=1.5,bracket.size = 0.15)+
   theme(legend.position = "none",text = element_text(size=5),
         plot.title = element_text(hjust = 0.5),
@@ -954,13 +903,10 @@ immune_plot=ggplot(data = select_data,aes(class,value))+
         axis.ticks.length = unit(0.03,"cm"),
         axis.text.x = element_text(angle = 45,vjust=1,hjust=1))
 #ggsave("immune_3subtype.pdf",width = 4,height = 2)
-p_g=ggarrange(p_GII,p_immune,immune_plot,ncol = 3,widths = c(1,1,2.5),labels = c("h","i","j"),
+p_g=ggarrange(p_GII,p_immune,immune_plot,ncol = 3,
+              widths = c(1,1,2.5),labels = c("h","i","j"),
               font.label = list(size=8))
 ff=ggarrange(f,p_g,nrow = 2,heights = c(5,1.2))
-pdf("p3_v14.pdf",width = 6.8,height = 9.5)
+pdf("p3_v16.pdf",width = 6.8,height = 9.5)
 ff
 dev.off()
-
-
-
-
