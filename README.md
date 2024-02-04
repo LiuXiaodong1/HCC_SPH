@@ -4,12 +4,18 @@ This is the code for HCC spatially punctuated heterogeneity distribution.
 
 #### *Directory structure*
 
-* Data : Example data required for regenerate plots.
-* DNA : The analysis script based on DNA related data.
-* RNA : The analysis script based on RNA related data.
-* Figure : The script related to reproduce main figures.
+The code for HCC spatially punctuated heterogeneity distribution (HCC_SPH) is organized into different directories and scripts.
+
+The directory structure is as follows:
+
+* Data :  This directory contains example data that is required for regenerating plots.
+* DNA : This directory contains the analysis scripts that are based on DNA-related data. 
+* RNA : This directory contains the analysis scripts that are based on RNA-related data. 
+* Figure :  This directory contains the scripts that are related to reproducing the main figures.
 
 #### *Dependencies*
+
+Session info:
 
 ```{R}
 > sessionInfo()
@@ -101,5 +107,3 @@ loaded via a namespace (and not attached):
 #### *Data source*
 
 The raw exome and RNA sequencing data have been deposited in the Genome Sequence Archive (GSA) hosted at National Genomics Data Center [HRA002112](), processed data can be found at source data file from the article.
-
-
