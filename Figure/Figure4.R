@@ -41,7 +41,7 @@ Fig4g=ggplot(data = GII,aes(class,GII))+
   geom_text(data=class_number,
             aes(x=class,y=0,label=paste0("n=",n)),
             size=1.5)+
-  geom_point(size=0.5)+scale_x_discrete(labels=c("Classic","Poliferation"))+
+  geom_point(size=0.5)+scale_x_discrete(labels=c("Classic","Proliferation"))+
   xlab("Subtype")+ggtitle("SH06")+ggplot2::ylim(0,0.62)+
   scale_fill_manual(values=c(RColorBrewer::brewer.pal(7,"Set2")[c(1,4)]))+
   theme_classic()+
