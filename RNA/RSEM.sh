@@ -1,4 +1,4 @@
-#rsem-prepare-reference --gtf /project/liuxd/liver/RNA-seq-data/ref/genome.gtf \
+rsem-prepare-reference --gtf /project/liuxd/liver/RNA-seq-data/ref/genome.gtf \
 					     --STAR \
    				     	/project/liuxd/liver/RNA-seq-data/ref/genome.fa \
 					/project/liuxd/liver/RNA-analysis/output/RSEM/ref/ref

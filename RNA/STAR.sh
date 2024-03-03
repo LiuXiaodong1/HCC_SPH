@@ -1,12 +1,12 @@
 
-: '
+
 STAR --runThreadN 4 \
 --runMode genomeGenerate \
 --genomeDir /project/liuxd/liver/RNA-analysis/output/STAR/genomeDir \
 --genomeFastaFiles /project/liuxd/liver/RNA-seq-data/ref/genome.fa \
 --sjdbGTFfile /project/liuxd/liver/RNA-seq-data/ref/genome.gtf \
 --sjdbOverhang 149
-'
+
 
 STAR --runThreadN 4 \
 --genomeDir /project/liuxd/liver/RNA-analysis/output/STAR/genomeDir \
