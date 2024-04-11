@@ -154,4 +154,4 @@ loaded via a namespace (and not attached):
 
 #### *Data source*
 
-The raw exome and RNA sequencing data have been deposited in the Genome Sequence Archive (GSA) hosted at National Genomics Data Center [HRA002112](), processed data can be found at source data file from the article.
+The raw exome and RNA sequencing data have been deposited in the Genome Sequence Archive (GSA) hosted at National Genomics Data Center [HRA002112](https://ngdc.cncb.ac.cn/gsa-human/browse/HRA002112), processed data can be found at source data file from the article.
